@@ -1,0 +1,65 @@
+% Merata-rata 40 spektrum frekuensi sampel dalam dataset
+% Hasilnya ada spektogram dan PSD ((tapi PSD ngaco))
+
+%% 
+% Path folder tempat file audio PCG berada di MATLAB Drive
+folderPath = '/MATLAB Drive/minidataset/';  % Ganti dengan path folder Anda di MATLAB Drive
+
+% Jumlah sinyal yang ada di dataset (misalnya 40 file audio)
+jumlah_sinyal = 40;
+
+% Placeholder untuk rata-rata spektrum
+total_spektra = [];  % Menyimpan spektrum rata-rata untuk setiap file
+
+% Parameter untuk STFT
+window_size = 256; % Ukuran jendela
+overlap = 128; % Tumpang tindih antara jendela
+nfft = 512; % Jumlah titik FFT per segmen
+
+% Loop untuk memuat dan memproses setiap file audio
+for i = 1:jumlah_sinyal
+    % Menyusun nama file sesuai dengan format a0001.wav sampai a0040.wav
+    fileName = fullfile(folderPath, sprintf('a%04d.wav', i));  % Menggunakan sprintf untuk membuat nama file
+    
+    % Membaca file audio PCG
+    [x, Fs] = audioread(fileName); % Membaca file audio (x: sinyal, Fs: frekuensi sampling)
+    
+    % Jika file audio memiliki lebih dari satu channel, kita ambil satu channel (misalnya channel pertama)
+    if size(x, 2) > 1
+        x = x(:, 1); % Ambil channel pertama jika stereo
+    end
+    
+    % Menghitung STFT menggunakan spectrogram
+    [S, F, T] = spectrogram(x, window_size, overlap, nfft, Fs);
+    
+    % Pastikan ukuran total_spektra sama dengan ukuran kolom S
+    if isempty(total_spektra)
+        total_spektra = zeros(size(S, 1), 1);  % Inisialisasi total_spektra dengan dimensi yang sesuai
+    end
+    
+    % Hitung spektrum (nilai mutlak dari STFT)
+    spektrum = abs(S);
+    
+    % Tambahkan spektrum ke total_spektra dengan ukuran yang kompatibel
+    total_spektra = total_spektra + mean(spektrum, 2);  % Rata-rata sepanjang waktu (T)
+end
+
+% Hitung rata-rata spektrum
+rata_rata_spektrum = total_spektra / jumlah_sinyal;
+
+% Membuat plot spektrum rata-rata
+figure;
+plot(F, rata_rata_spektrum);
+xlabel('Frekuensi (Hz)');
+ylabel('Amplitudo');
+title('Rata-rata Spektrum Sinyal PCG (STFT)');
+grid on;
+
+% Menambahkan keterangan waktu pada grafik (x-axis: waktu, y-axis: frekuensi)
+figure;
+imagesc(T, F, 10*log10(abs(S)));  % Menggunakan logaritma desibel untuk visibilitas yang lebih baik
+axis xy;
+xlabel('Waktu (detik)');
+ylabel('Frekuensi (Hz)');
+title('Spektrum Waktu-Frekuensi Sinyal PCG');
+colorbar; % Menambahkan colorbar untuk intensitas spektrum
