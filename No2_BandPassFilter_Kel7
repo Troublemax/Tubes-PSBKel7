@@ -1,0 +1,76 @@
+% Filter Band-pass FIR, window hamming, fc 25 Hz - 150 Hz
+function filtered_signal = enhanced_lowpass_filter(input_file, output_file, cutoff_freq_low, cutoff_freq_high)
+   
+    if nargin < 4
+        cutoff_freq_low = 25;  % Lower cutoff for high-pass filter
+        cutoff_freq_high = 150; % Upper cutoff for low-pass filter
+    end
+
+    % Read the audio file
+    [data, fs] = audioread(input_file);
+
+    % Convert stereo to mono 
+    if size(data, 2) > 1
+        data = mean(data, 2);
+    end
+
+    % Create time vector for plotting
+    t = (0:length(data)-1) / fs;
+
+    % Design bandpass filter using FIR
+    nyquist = fs / 2;
+    normalized_cutoff_low = cutoff_freq_low / nyquist;
+    normalized_cutoff_high = cutoff_freq_high / nyquist;
+    N = 2048;  % Length of filter
+
+    % Design bandpass filter (combination of low and high pass)
+    h_bandpass = fir1(N-1, [normalized_cutoff_low, normalized_cutoff_high], 'bandpass', hamming(N));
+
+    % Apply the filter to the signal using zero-phase filtering
+    filtered_signal = filtfilt(h_bandpass, 1, data);
+
+    % Normalize the signal
+    filtered_signal = filtered_signal / max(abs(filtered_signal));
+
+    % Create figure for plotting
+    figure('Position', [100 100 800 600]);
+
+    % Plot original signal
+    subplot(3,1,1);
+    plot(t, data);
+    title('Original PCG Signal');
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    grid on;
+
+    % Plot filtered signal
+    subplot(3,1,2);
+    plot(t, filtered_signal);
+    title(['Filtered PCG Signal (Band-pass ', num2str(cutoff_freq_low), '-', num2str(cutoff_freq_high), ' Hz)']);
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    grid on;
+
+    % Zoomed-in plot to show S1-S4 details
+    subplot(3,1,3);
+    zoom_start = 5; % Start time for zoom (seconds)
+    zoom_end = 10;   % End time for zoom (seconds)
+    zoom_indices = (t >= zoom_start & t <= zoom_end);
+    plot(t(zoom_indices), filtered_signal(zoom_indices));
+    title('Zoomed-in View of PCG Signal (S1-S4)');
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    grid on;
+
+    % Save the filtered audio
+    audiowrite(output_file, filtered_signal, fs);
+end
+
+% Call the function
+input_file = 'a0001.wav';       % Path to the input audio file
+output_file = 'filtered_pcg_enhanceda.wav';   % Path to save the filtered audio file
+cutoff_freq_low = 25;          % Lower cutoff frequency for the bandpass filter
+cutoff_freq_high = 150;        % Upper cutoff frequency for the bandpass filter
+
+% Call the function to filter and save the result
+filtered_signal = enhanced_lowpass_filter(input_file, output_file, cutoff_freq_low, cutoff_freq_high);
