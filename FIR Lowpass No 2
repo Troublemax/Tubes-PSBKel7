@@ -1,4 +1,4 @@
-% Filter Low pass FIR, Fc 210 Hz, orde 511
+% Filter Low pass FIR, Fc 210 Hz, orde 511, window hamming
 
 
 function filtered_signal = lowpass_filter_hamming(input_file, output_file, cutoff_freq)
