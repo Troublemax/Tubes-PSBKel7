@@ -1,0 +1,70 @@
+% Filter Low pass FIR, Fc 210 Hz, orde 511, window hamming
+
+
+function filtered_signal = lowpass_filter_hamming(input_file, output_file, cutoff_freq)
+    % LOWPASS_FILTER_HAMMING Apply low-pass filter using Hamming window to PCG audio
+    %   input_file: path to input audio file
+    %   output_file: path to save filtered audio
+    %   cutoff_freq: cutoff frequency in Hz (default: 200)
+    
+    % Set default cutoff frequency if not provided
+    if nargin < 3
+        cutoff_freq = 210;
+    end
+    
+    % Read the audio file
+    [data, fs] = audioread(input_file);
+    
+    % Convert stereo to mono if necessary
+    if size(data, 2) > 1
+        data = mean(data, 2);
+    end
+    
+    % Create time vector for plotting
+    t = (0:length(data)-1) / fs;
+    
+    % Design low-pass filter using Hamming window
+    nyquist = fs / 2;
+    normalized_cutoff_freq = cutoff_freq / nyquist;
+    N = 512;  % Length of filter (can be adjusted)
+    
+    % Create ideal low-pass filter (rectangular window in frequency domain)
+    h = fir1(N-1, normalized_cutoff_freq, 'low', hamming(N));
+    
+    % Apply the filter to the signal using zero-phase filtering
+    filtered_signal = filtfilt(h, 1, data);
+    
+    % Create figure for plotting
+    figure('Position', [100 100 800 600]);
+    
+    % Plot original signal
+    subplot(2,1,1);
+    plot(t, data);
+    title('Original PCG Signal');
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    grid on;
+    
+    % Plot filtered signal
+    subplot(2,1,2);
+    plot(t, filtered_signal);
+    title(['Filtered PCG Signal (Low-pass ', num2str(cutoff_freq), ' Hz)']);
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    grid on;
+    
+    % Adjust plot spacing
+    sgtitle('PCG Signal Before and After Low-pass Filtering');
+    
+    % Save the filtered audio
+    audiowrite(output_file, filtered_signal, fs);
+end
+
+% Example script to call the function
+% Replace these paths with your actual file paths
+input_file = 'a0001.wav';       % Path to the input audio file
+output_file = 'filtered_pcg_hamming.wav';   % Path to save the filtered audio file
+cutoff_freq = 210;                  % Cutoff frequency for the low-pass filter
+
+% Call the function to filter and save the result
+filtered_signal = lowpass_filter_hamming(input_file, output_file, cutoff_freq);
